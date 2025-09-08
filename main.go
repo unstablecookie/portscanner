@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"gioui.org/app"
@@ -59,6 +60,54 @@ func pickPorts(s string) []string {
 		ptrs = append(ptrs, "389")
 		return ptrs
 
+	case "DNS":
+		var ptrs []string
+		ptrs = append(ptrs, "53")
+		return ptrs
+
+	case "KRB1":
+		var ptrs []string
+		ptrs = append(ptrs, "88")
+		return ptrs
+	case "NTP":
+		var ptrs []string
+		ptrs = append(ptrs, "123")
+		return ptrs
+	case "RPCm":
+		var ptrs []string
+		ptrs = append(ptrs, "135")
+		return ptrs
+	case "LDAPS1":
+		var ptrs []string
+		ptrs = append(ptrs, "636")
+		return ptrs
+	case "SMB1":
+		var ptrs []string
+		ptrs = append(ptrs, "137", "138", "139")
+		return ptrs
+	case "SMB2":
+		var ptrs []string
+		ptrs = append(ptrs, "445")
+		return ptrs
+	case "KRB2":
+		var ptrs []string
+		ptrs = append(ptrs, "464")
+		return ptrs
+	case "LDAPgc":
+		var ptrs []string
+		ptrs = append(ptrs, "3268", "3269")
+		return ptrs
+	case "ADWS":
+		var ptrs []string
+		ptrs = append(ptrs, "9389")
+		return ptrs
+	case "RPC":
+		var ptrs []string
+		for i := 49152; i < 65536; i++ {
+			str := strconv.Itoa(i)
+			ptrs = append(ptrs, str)
+		}
+		return ptrs
 	default:
 		var ptrs []string
 		ptrs = append(ptrs, "21")
@@ -107,11 +156,55 @@ func draw(window *app.Window) error {
 					},
 				),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "RDP", "RDP")
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "RDP", "RDP(3389)")
 					return buttonStyle.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "LDAP", "ldap")
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "LDAP", "ldap(389)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "DNS", "DNS(53)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "KRB1", "Kerberos(88)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "KRB2", "KerberosPWD(464)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "NTP", "Time(123)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "RPCm", "RPC(135)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "RPC", "RPC(49152-65535)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "LDAPS1", "ldaps(636)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "SMB1", "smb/netbios(137,138,139)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "SMB2", "smb(445)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "LDAPgc", "LDAP GC(3268,3269)")
+					return buttonStyle.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "ADWS", "AD WS(9389)")
 					return buttonStyle.Layout(gtx)
 				}),
 				layout.Rigid(
