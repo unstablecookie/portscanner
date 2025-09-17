@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"gioui.org/app"
@@ -15,6 +15,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
+	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func testConnection(ip string, ports []string) bool {
 	return true
 }
 
-func pickPorts(s string) []string {
+func pickPorts(s string, portNumber string) []string {
 	switch s {
 	case "RDP":
 		var ptrs []string
@@ -101,12 +102,9 @@ func pickPorts(s string) []string {
 		var ptrs []string
 		ptrs = append(ptrs, "9389")
 		return ptrs
-	case "RPC":
+	case "OTHER":
 		var ptrs []string
-		for i := 49152; i < 65536; i++ {
-			str := strconv.Itoa(i)
-			ptrs = append(ptrs, str)
-		}
+		ptrs = append(ptrs, portNumber)
 		return ptrs
 	default:
 		var ptrs []string
@@ -117,14 +115,25 @@ func pickPorts(s string) []string {
 
 func draw(window *app.Window) error {
 	theme := material.NewTheme()
-	var resultEditor widget.Editor
-	var ipEditor widget.Editor
-	var ops op.Ops
-	var button widget.Clickable
-	var connectionIsValid bool
-	var resultText string = "Waiting for the test.."
-	var ipText string = "IP" //192.168.1.248
-	var protocolRadioButton widget.Enum
+	var (
+		resultEditor        widget.Editor
+		ipEditor            widget.Editor
+		manualPort          widget.Editor
+		ops                 op.Ops
+		button              widget.Clickable
+		coloredBut          widget.Clickable
+		connectionIsValid   bool
+		resultText          string = "Waiting for the test.."
+		ipText              string = "IP" //192.168.1.248
+		manualPortText      string = "1"
+		protocolRadioButton widget.Enum
+		resultButtonColor   bool
+		col                 color.NRGBA
+		colBack             color.NRGBA
+	)
+
+	toggleCheckBoxIcon, _ := widget.NewIcon(icons.ToggleCheckBox) //(icons.ToggleCheckBox) //widget.NewIcon(icons.ActionSearch)
+	toggleCheckBoxBlankIcon, _ := widget.NewIcon(icons.ToggleCheckBoxOutlineBlank)
 	for {
 		switch e := window.Event().(type) {
 		case app.DestroyEvent:
@@ -134,11 +143,13 @@ func draw(window *app.Window) error {
 			if button.Clicked(gtx) {
 				rbtnEnumValue, _ := protocolRadioButton.Focused()
 				fmt.Println(rbtnEnumValue)
-				connectionIsValid = testConnection(ipEditor.Text(), pickPorts(rbtnEnumValue))
+				connectionIsValid = testConnection(ipEditor.Text(), pickPorts(rbtnEnumValue, manualPort.Text()))
 				if connectionIsValid {
 					resultText = "Success"
+					resultButtonColor = true
 				} else {
 					resultText = "test failed"
+					resultButtonColor = false
 				}
 
 			}
@@ -184,10 +195,6 @@ func draw(window *app.Window) error {
 					return buttonStyle.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "RPC", "RPC(49152-65535)")
-					return buttonStyle.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "LDAPS1", "ldaps(636)")
 					return buttonStyle.Layout(gtx)
 				}),
@@ -207,24 +214,61 @@ func draw(window *app.Window) error {
 					buttonStyle := material.RadioButton(theme, &protocolRadioButton, "ADWS", "AD WS(9389)")
 					return buttonStyle.Layout(gtx)
 				}),
-				layout.Rigid(
-					func(gtx layout.Context) layout.Dimensions {
-						editorText := material.Editor(theme, &resultEditor, resultText)
-						resultEditor.SingleLine = true
-						resultEditor.Alignment = text.Middle
-						return editorText.Layout(gtx)
-					},
-				),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceEnd, Alignment: layout.Middle}.Layout(gtx, //Spacing: layout.SpaceEnd
+						layout.Rigid(
+							func(gtx layout.Context) layout.Dimensions {
+								buttonStyle := material.RadioButton(theme, &protocolRadioButton, "OTHER", "Other:")
+								return buttonStyle.Layout(gtx)
+							},
+						),
+						layout.Rigid(
+							func(gtx layout.Context) layout.Dimensions {
+								manualText := material.Editor(theme, &manualPort, manualPortText)
+								return manualText.Layout(gtx)
+							},
+						),
+					)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.Spacing(layout.Middle), Alignment: layout.Middle}.Layout(gtx, //{Axis: layout.Horizontal, Spacing: layout.Spacing(layout.Middle)}
+						layout.Rigid(
+							func(gtx layout.Context) layout.Dimensions {
+								editorText := material.Editor(theme, &resultEditor, resultText)
+								resultEditor.SingleLine = true
+								resultEditor.Alignment = text.Middle
+								return editorText.Layout(gtx)
+							},
+						),
+						layout.Rigid(
+							layout.Spacer{Width: unit.Dp(25)}.Layout,
+						),
+						layout.Rigid(
+							func(gtx layout.Context) layout.Dimensions {
+								var clrBtn material.IconButtonStyle
+								if resultButtonColor {
+									col = color.NRGBA{R: 0x00, B: 0x00, G: 0x00, A: 0xFF}
+									colBack = color.NRGBA{R: 0x80, B: 0x00, G: 0xFF, A: 0xFF}
+									clrBtn = material.IconButton(theme, &coloredBut, toggleCheckBoxIcon, "Test!")
+								} else {
+									col = color.NRGBA{R: 0x00, B: 0x00, G: 0x00, A: 0xFF}
+									colBack = color.NRGBA{R: 0xFF, B: 0x00, G: 0x80, A: 0xFF}
+									clrBtn = material.IconButton(theme, &coloredBut, toggleCheckBoxBlankIcon, "Test!")
+								}
+								//clrBtn.Size = unit.Dp(15)
+								clrBtn.Color = col
+								clrBtn.Background = colBack
+								return clrBtn.Layout(gtx)
+							},
+						))
+				}),
 				layout.Rigid(
 					func(gtx layout.Context) layout.Dimensions {
 						btn := material.Button(theme, &button, "Test!")
-						btn.CornerRadius = 20
+						btn.CornerRadius = 10
 						btn.TextSize = 15
 						return btn.Layout(gtx)
 					},
-				),
-				layout.Rigid(
-					layout.Spacer{Height: unit.Dp(15)}.Layout,
 				),
 			)
 			e.Frame(gtx.Ops)
